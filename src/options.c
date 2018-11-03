@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "erlinit.h"
 
 #include <getopt.h>
+#include <sched.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,7 +52,9 @@ struct erlinit_options options = {
     .gid = 0,
     .uid = 0,
     .graceful_shutdown_timeout_ms = 10000,
-    .update_clock = 0
+    .update_clock = 0,
+    .scheduler_policy = SCHED_OTHER,
+    .scheduler_priority = 0
 };
 
 enum erlinit_option_value {
@@ -83,7 +86,9 @@ enum erlinit_option_value {
     OPT_GID,
     OPT_PRE_RUN_EXEC,
     OPT_GRACEFUL_SHUTDOWN_TIMEOUT,
-    OPT_UPDATE_CLOCK
+    OPT_UPDATE_CLOCK,
+    OPT_SCHEDULER_POLICY,
+    OPT_SCHEDULER_PRIORITY
 };
 
 static struct option long_options[] = {
@@ -111,6 +116,8 @@ static struct option long_options[] = {
     {"pre-run-exec", required_argument, 0, OPT_PRE_RUN_EXEC },
     {"graceful-shutdown-timeout", required_argument, 0, OPT_GRACEFUL_SHUTDOWN_TIMEOUT },
     {"update-clock", no_argument, 0, OPT_UPDATE_CLOCK },
+    {"scheduler-policy", required_argument, 0, OPT_SCHEDULER_POLICY },
+    {"scheduler-priority", required_argument, 0, OPT_SCHEDULER_PRIORITY },
     {0,     0,      0, 0 }
 };
 
@@ -210,6 +217,23 @@ void parse_args(int argc, char *argv[])
             break;
         case OPT_UPDATE_CLOCK: // --update-clock
             options.update_clock = 1;
+            break;
+        case OPT_SCHEDULER_POLICY: // --scheduler-policy OTHER|BATCH|IDLE|FIFO|RR
+            if (strcasecmp(optarg, "OTHER") == 0)
+                options.scheduler_policy = SCHED_OTHER;
+            else if (strcasecmp(optarg, "BATCH") == 0)
+                options.scheduler_policy = SCHED_BATCH;
+            else if (strcasecmp(optarg, "IDLE") == 0)
+                options.scheduler_policy = SCHED_IDLE;
+            else if (strcasecmp(optarg, "FIFO") == 0)
+                options.scheduler_policy = SCHED_FIFO;
+            else if (strcasecmp(optarg, "RR") == 0)
+                options.scheduler_policy = SCHED_RR;
+            else
+                warn("don't know about the '%s' scheduler policy yet", optarg);
+            break;
+          case OPT_SCHEDULER_PRIORITY: // --scheduler-priority 10
+            options.scheduler_priority = (int) strtol(optarg, NULL, 0);
             break;
         default:
             // getopt prints a warning, so we don't have to

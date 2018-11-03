@@ -76,6 +76,8 @@ struct erlinit_options {
     int gid;
     int graceful_shutdown_timeout_ms;
     int update_clock;
+    int scheduler_policy;
+    int scheduler_priority;
 };
 
 extern struct erlinit_options options;
